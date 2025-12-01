@@ -15,7 +15,7 @@ import com.example.myapp.core.TAG
 import com.example.myapp.todo.data.Item
 import com.example.myapp.todo.data.ItemRepository
 import kotlinx.coroutines.launch
-
+import java.util.Date
 data class ItemUiState(
     val itemId: String? = null,
     val item: Item = Item(),
@@ -40,30 +40,47 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
 
     fun loadItem() {
         viewModelScope.launch {
-            itemRepository.itemStream.collect { items ->
+            itemRepository.itemStream.collect { result ->
                 if (!(uiState.loadResult is Result.Loading)) {
                     return@collect
                 }
-                val item = items.find { it._id == itemId } ?: Item()
-                uiState = uiState.copy(item = item, loadResult = Result.Success(item))
+                if (result is Result.Success) {
+                    val items = result.data
+                    val item = items.find { it._id == itemId } ?: Item()
+                    uiState = uiState.copy(loadResult = Result.Success(item), item = item)
+                } else if (result is Result.Error) {
+                    uiState =
+                        uiState.copy(loadResult = Result.Error(result.exception))
+                }
             }
         }
     }
 
 
-    fun saveOrUpdateItem(text: String) {
+    fun saveItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date ){
         viewModelScope.launch {
-            Log.d(TAG, "saveOrUpdateItem...");
+            Log.d(TAG, "save new game!!!");
+            try{
+                uiState = uiState.copy(submitResult = Result.Loading)
+                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data))
+                val savedItem: Item = itemRepository.save(item)
+                Log.d(TAG, "save game succeeeded!!!!");
+                uiState = uiState.copy(submitResult = Result.Success(savedItem))
+            }catch (e: Exception){
+                Log.d(TAG, "saveOrUpdateItem failed");
+                uiState = uiState.copy(submitResult = Result.Error(e))
+            }
+        }
+    }
+
+    fun UpdateItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date) {
+        viewModelScope.launch {
+            Log.d(TAG, "update game!!!");
             try {
                 uiState = uiState.copy(submitResult = Result.Loading)
-                val item = uiState.item.copy(text = text)
-                val savedItem: Item;
-                if (itemId == null) {
-                    savedItem = itemRepository.save(item)
-                } else {
-                    savedItem = itemRepository.update(item)
-                }
-                Log.d(TAG, "saveOrUpdateItem succeeeded");
+                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data))
+                val savedItem: Item = itemRepository.update(item)
+                Log.d(TAG, "UpdateItem succeeeded");
                 uiState = uiState.copy(submitResult = Result.Success(savedItem))
             } catch (e: Exception) {
                 Log.d(TAG, "saveOrUpdateItem failed");

@@ -24,7 +24,7 @@ class MyAppViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            itemRepository.deleteAll()
+            //itemRepository.deleteAll()
             userPreferencesRepository.save(UserPreferences())
         }
     }

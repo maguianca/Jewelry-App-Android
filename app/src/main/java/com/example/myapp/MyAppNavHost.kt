@@ -17,7 +17,7 @@ import com.example.myapp.core.data.remote.Api
 import com.example.myapp.core.ui.UserPreferencesViewModel
 import com.example.myapp.todo.ui.item.ItemScreen
 import com.example.myapp.todo.ui.items.ItemsScreen
-
+import com.example.myapp.todo.ui.item.ItemAddScreen
 val itemsRoute = "items"
 val authRoute = "auth"
 
@@ -69,7 +69,7 @@ fun MyAppNavHost() {
         }
         composable(route = "$itemsRoute-new")
         {
-            ItemScreen(
+            ItemAddScreen(
                 itemId = null,
                 onClose = { onCloseItem() }
             )

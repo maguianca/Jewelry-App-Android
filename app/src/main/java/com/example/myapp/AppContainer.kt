@@ -3,7 +3,6 @@ package com.example.myapp.core
 import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.preferencesDataStore
-import com.example.myapp.MyAppDatabase
 import com.example.myapp.auth.data.AuthRepository
 import com.example.myapp.auth.data.remote.AuthDataSource
 import com.example.myapp.core.data.UserPreferencesRepository
@@ -25,10 +24,8 @@ class AppContainer(val context: Context) {
     private val itemWsClient: ItemWsClient = ItemWsClient(Api.okHttpClient)
     private val authDataSource: AuthDataSource = AuthDataSource()
 
-    private val database: MyAppDatabase by lazy { MyAppDatabase.getDatabase(context) }
-
     val itemRepository: ItemRepository by lazy {
-        ItemRepository(itemService, itemWsClient, database.itemDao())
+        ItemRepository(itemService, itemWsClient)
     }
 
     val authRepository: AuthRepository by lazy {

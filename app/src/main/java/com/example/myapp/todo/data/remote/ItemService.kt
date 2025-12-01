@@ -14,10 +14,7 @@ interface ItemService {
     suspend fun find(@Header("Authorization") authorization: String): List<Item>
 
     @GET("/api/item/{id}")
-    suspend fun read(
-        @Header("Authorization") authorization: String,
-        @Path("id") itemId: String?
-    ): Item;
+    suspend fun read(@Header("Authorization") authorization: String, @Path("id") itemId: String?): Item;
 
     @Headers("Content-Type: application/json")
     @POST("/api/item")

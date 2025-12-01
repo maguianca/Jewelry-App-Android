@@ -12,9 +12,16 @@ import com.example.myapp.todo.data.Item
 import com.example.myapp.todo.data.ItemRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import com.example.myapp.core.Result
 class ItemsViewModel(private val itemRepository: ItemRepository) : ViewModel() {
-    val uiState: Flow<List<Item>> = itemRepository.itemStream
+    val uiState: StateFlow<Result<List<Item>>> = itemRepository.itemStream.stateIn(
+        scope = viewModelScope,
+        started = WhileSubscribed(),
+        initialValue = Result.Loading
+    )
 
     init {
         Log.d(TAG, "init")

@@ -2,8 +2,8 @@ package com.example.myapp.todo.data
 
 import android.util.Log
 import com.example.myapp.core.TAG
+import com.example.myapp.core.Result
 import com.example.myapp.core.data.remote.Api
-import com.example.myapp.todo.data.local.ItemDao
 import com.example.myapp.todo.data.remote.ItemEvent
 import com.example.myapp.todo.data.remote.ItemService
 import com.example.myapp.todo.data.remote.ItemWsClient
@@ -12,14 +12,20 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.BufferOverflow
 
 class ItemRepository(
     private val itemService: ItemService,
     private val itemWsClient: ItemWsClient,
-    private val itemDao: ItemDao
 ) {
-    val itemStream by lazy { itemDao.getAll() }
+    private var items: List<Item> = listOf();
+    private var itemsFlow: MutableSharedFlow<Result<List<Item>>> = MutableSharedFlow(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
+    val itemStream: Flow<Result<List<Item>>> = itemsFlow
     init {
         Log.d(TAG, "init")
     }
@@ -30,11 +36,11 @@ class ItemRepository(
         Log.d(TAG, "refresh started")
         try {
             val items = itemService.find(authorization = getBearerToken())
-            itemDao.deleteAll()
-            items.forEach { itemDao.insert(it) }
             Log.d(TAG, "refresh succeeded")
+            itemsFlow.emit(Result.Success(items))
         } catch (e: Exception) {
             Log.w(TAG, "refresh failed", e)
+            itemsFlow.emit(Result.Error(e))
         }
     }
 
@@ -99,17 +105,17 @@ class ItemRepository(
 
     private suspend fun handleItemUpdated(item: Item) {
         Log.d(TAG, "handleItemUpdated...")
-        itemDao.update(item)
+        items=items.map{ if (it._id==item._id) item else it}
+        itemsFlow.emit(Result.Success(items))
     }
 
     private suspend fun handleItemCreated(item: Item) {
         Log.d(TAG, "handleItemCreated...")
-        itemDao.insert(item)
+        if(!items.contains(item))
+            items = items.plus(item)
+        itemsFlow.emit(Result.Success(items))
     }
 
-    suspend fun deleteAll() {
-        itemDao.deleteAll()
-    }
 
     fun setToken(token: String) {
         itemWsClient.authorize(token)
