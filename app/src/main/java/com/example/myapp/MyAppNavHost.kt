@@ -18,7 +18,7 @@ import com.example.myapp.core.ui.UserPreferencesViewModel
 import com.example.myapp.todo.ui.item.ItemScreen
 import com.example.myapp.todo.ui.items.ItemsScreen
 import com.example.myapp.todo.ui.item.ItemAddScreen
-val itemsRoute = "items"
+val itemsRoute = "item"
 val authRoute = "auth"
 
 @Composable

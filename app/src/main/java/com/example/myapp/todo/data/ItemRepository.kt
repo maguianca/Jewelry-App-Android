@@ -19,7 +19,7 @@ class ItemRepository(
     private val itemService: ItemService,
     private val itemWsClient: ItemWsClient,
 ) {
-    private var items: List<Item> = listOf();
+    //private var items: List<Item> = listOf();
     private var itemsFlow: MutableSharedFlow<Result<List<Item>>> = MutableSharedFlow(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -105,15 +105,17 @@ class ItemRepository(
 
     private suspend fun handleItemUpdated(item: Item) {
         Log.d(TAG, "handleItemUpdated...")
-        items=items.map{ if (it._id==item._id) item else it}
-        itemsFlow.emit(Result.Success(items))
+        //items=items.map{ if (it._id==item._id) item else it}
+        //itemsFlow.emit(Result.Success(items))
+        refresh()
     }
 
     private suspend fun handleItemCreated(item: Item) {
         Log.d(TAG, "handleItemCreated...")
-        if(!items.contains(item))
-            items = items.plus(item)
-        itemsFlow.emit(Result.Success(items))
+        //if(!items.contains(item))
+        //    items = items.plus(item)
+        //itemsFlow.emit(Result.Success(items))
+        refresh()
     }
 
 
