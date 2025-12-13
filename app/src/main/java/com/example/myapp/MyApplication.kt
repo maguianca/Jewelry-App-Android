@@ -17,7 +17,6 @@ package com.example.myapp
 
 import android.app.Application
 import android.util.Log
-import com.example.myapp.core.AppContainer
 import com.example.myapp.core.TAG
 
 class MyApplication : Application() {

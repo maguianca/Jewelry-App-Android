@@ -82,7 +82,6 @@ fun ItemAddScreen(itemId: String?, onClose: () -> Unit){
     var pret by rememberSaveable { mutableStateOf(0) }
     var data by rememberSaveable { mutableStateOf(Date()) }
     var pietre by rememberSaveable { mutableStateOf(false) }
-
     // transform in double la itemViewModel.update ....
 
 
@@ -100,7 +99,7 @@ fun ItemAddScreen(itemId: String?, onClose: () -> Unit){
 
     Scaffold (
         topBar = {
-            TopAppBar(title = { Text(text = "Add Game") },
+            TopAppBar(title = { Text(text = "Add Item") },
                 actions = {
                     Button(onClick = {
                         Log.d("ItemScreen", "back to list");
@@ -109,7 +108,7 @@ fun ItemAddScreen(itemId: String?, onClose: () -> Unit){
 
                     Button(onClick = {
                         Log.d("ItemScreen", "save item text = $cod");
-                        itemViewModel.saveItem(cod,categorie,pret,pietre,data)
+                        itemViewModel.saveItem(cod,categorie,pret,pietre,data,"")
                     }, modifier=Modifier.padding(horizontal=8.dp)) { Text("Save") }
                 })
         }

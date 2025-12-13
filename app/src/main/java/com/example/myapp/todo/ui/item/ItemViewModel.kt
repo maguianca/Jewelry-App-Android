@@ -57,14 +57,14 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
     }
 
 
-    fun saveItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date ){
+    fun saveItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date ,imageUrl:String){
         viewModelScope.launch {
-            Log.d(TAG, "save new game!!!");
+            Log.d(TAG, "save new item!!!");
             try{
                 uiState = uiState.copy(submitResult = Result.Loading)
-                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data))
+                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data),imageUrl=imageUrl)
                 val savedItem: Item = itemRepository.save(item)
-                Log.d(TAG, "save game succeeeded!!!!");
+                Log.d(TAG, "save item succeeeded!!!!");
                 uiState = uiState.copy(submitResult = Result.Success(savedItem))
             }catch (e: Exception){
                 Log.d(TAG, "saveOrUpdateItem failed");
@@ -73,12 +73,12 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
         }
     }
 
-    fun UpdateItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date) {
+    fun UpdateItem(cod:String, categorie:String,pret:Int, pietre:Boolean, data:Date, imageUrl:String) {
         viewModelScope.launch {
-            Log.d(TAG, "update game!!!");
+            Log.d(TAG, "update item!");
             try {
                 uiState = uiState.copy(submitResult = Result.Loading)
-                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data))
+                val item = uiState.item.copy(cod=cod,categorie=categorie, pret=pret, pietre=pietre,data = convertDateToString(data),imageUrl=imageUrl)
                 val savedItem: Item = itemRepository.update(item)
                 Log.d(TAG, "UpdateItem succeeeded");
                 uiState = uiState.copy(submitResult = Result.Success(savedItem))

@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapp.R
 import com.example.myapp.core.Result
-
+import com.example.myapp.todo.ImagePicker
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemScreen(itemId: String?, onClose: () -> Unit) {
@@ -42,6 +42,8 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     var pret by rememberSaveable { mutableStateOf(itemUiState.item.pret) }
     var data by rememberSaveable { mutableStateOf(convertStringToDate(itemUiState.item.data)) }
     var pietre by rememberSaveable { mutableStateOf(itemUiState.item.pietre) }
+    var imageUrl by rememberSaveable { mutableStateOf(itemUiState.item.imageUrl) }
+
     Log.d("ItemScreen", "recompose, text = $cod")
 
     LaunchedEffect(itemUiState.submitResult) {
@@ -64,6 +66,7 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
             pret=itemUiState.item.pret
             pietre=itemUiState.item.pietre
             data= convertStringToDate(itemUiState.item.data)
+            imageUrl=itemUiState.item.imageUrl
             textInitialized = true
         }
     }
@@ -81,7 +84,7 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
                     }) { Text("Back") }
                     Button(onClick = {
                         Log.d("ItemScreen", "save item text = $cod");
-                        itemViewModel.UpdateItem(cod,categorie,pret,pietre,data)
+                        itemViewModel.UpdateItem(cod,categorie,pret,pietre,data,imageUrl)
                     }, modifier=Modifier.padding(horizontal=8.dp)) { Text("Update") }
                 }
             )
@@ -138,6 +141,7 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
                         text="pietre",
                     )
                 }
+                ImagePicker(imageUrl, { imageUrl = it })
             }
             if (itemUiState.submitResult is Result.Error) {
                 Text(
