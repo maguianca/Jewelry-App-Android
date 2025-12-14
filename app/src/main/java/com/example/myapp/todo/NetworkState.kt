@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import java.util.logging.Level
 import java.util.logging.Logger
-
+import androidx.compose.runtime.remember
 private data class NetworkState(
     val isConnected: Boolean,
     val isValidated: Boolean,
@@ -109,7 +109,17 @@ private fun Context.observeConnectivityAsFlow() =
 @Composable
 fun connectivityState(): State<ConnectionState> {
     val context = LocalContext.current
-    return produceState<ConnectionState>(initialValue = ConnectionState.Unavailable) {
+    val initialConnectionState = remember(context) {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val state = cm.activeNetworkState
+        if (state.isConnected && state.isValidated) {
+            ConnectionState.Available
+        } else {
+            ConnectionState.Unavailable
+        }
+    }
+
+    return produceState<ConnectionState>(initialValue = initialConnectionState) {
         context.observeConnectivityAsFlow().collect { value = it }
     }
 }

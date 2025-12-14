@@ -28,6 +28,9 @@ import android.app.NotificationManager
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import com.example.myapp.todo.PendingWorker
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 
 class ItemRepository(private val itemService: ItemService, private val itemWsClient: ItemWsClient,
                      private val database: ItemDatabase, private val context: Context
@@ -121,6 +124,7 @@ class ItemRepository(private val itemService: ItemService, private val itemWsCli
             Handler(Looper.getMainLooper()).post({
                 Toast.makeText(context, "Server unreachable. Saved locally", Toast.LENGTH_LONG).show()
             })
+            scheduleSync()
             return item
         }
     }
@@ -152,10 +156,26 @@ class ItemRepository(private val itemService: ItemService, private val itemWsCli
             Handler(Looper.getMainLooper()).post({
                 Toast.makeText(context, "Server unreachable. Saved locally", Toast.LENGTH_LONG).show()
             })
+            scheduleSync()
                 return createdItem
         }
     }
 
+    private fun scheduleSync() {
+        val workManager = WorkManager.getInstance(context)
+
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        val request = OneTimeWorkRequest.Builder(PendingWorker::class.java)
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueue(request)
+        Log.d(TAG, "Sync work request enqueued with network constraints.")
+        print("Sync work request enqueued with network constraints.")
+    }
     private suspend fun handleItemDeleted(item: Item) {
         Log.d(TAG, "handleItemDeleted - todo $item")
     }

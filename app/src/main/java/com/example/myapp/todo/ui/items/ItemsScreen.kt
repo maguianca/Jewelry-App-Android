@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -49,20 +50,22 @@ fun ItemsScreen(onItemClick: (id: String?) -> Unit, onAddItem: () -> Unit, onLog
     val itemsViewModel = viewModel<ItemsViewModel>(factory = ItemsViewModel.Factory)
     val itemsUiState by itemsViewModel.uiState.collectAsStateWithLifecycle()
 
-    val app = LocalContext.current.applicationContext as MyApplication;
-    val workManager = WorkManager.getInstance(app)
-    var isOffline by rememberSaveable { mutableStateOf(true) }
+    //val app = LocalContext.current.applicationContext as MyApplication;
+    //val workManager = WorkManager.getInstance(app)
     val networkConnectivity by connectivityState()
+
+    var isOffline by remember { mutableStateOf(networkConnectivity == ConnectionState.Unavailable) }
 
 
     LaunchedEffect(networkConnectivity) {
-        if(isOffline) {
-            if (networkConnectivity == ConnectionState.Available) {
-                val request = OneTimeWorkRequestBuilder<PendingWorker>().build()
-                workManager.enqueue(request)
-            }
-        }
+        val wasOffline = isOffline
         isOffline = networkConnectivity == ConnectionState.Unavailable
+
+        if (wasOffline && networkConnectivity == ConnectionState.Available) {
+            Log.d("ItemsScreen", "Network connection RESTORED. Enqueuing background worker.")
+            val request = OneTimeWorkRequestBuilder<PendingWorker>().build()
+           // workManager.enqueue(request)
+        }
     }
 
     Scaffold(
