@@ -1,6 +1,8 @@
 package com.example.myapp
 
 import android.util.Log
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,82 +17,101 @@ import com.example.myapp.auth.LoginScreen
 import com.example.myapp.core.data.UserPreferences
 import com.example.myapp.core.data.remote.Api
 import com.example.myapp.core.ui.UserPreferencesViewModel
+import com.example.myapp.todo.ui.item.ItemAddScreen
 import com.example.myapp.todo.ui.item.ItemScreen
 import com.example.myapp.todo.ui.items.ItemsScreen
-import com.example.myapp.todo.ui.item.ItemAddScreen
+
 val itemsRoute = "item"
 val authRoute = "auth"
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MyAppNavHost() {
+fun MyAppNavHost(
+    myAppViewModel: MyAppViewModel = viewModel(factory = MyAppViewModel.Factory)
+) {
     val navController = rememberNavController()
     val onCloseItem = {
         Log.d("MyAppNavHost", "navigate back to list")
         navController.popBackStack()
     }
+
     val userPreferencesViewModel =
         viewModel<UserPreferencesViewModel>(factory = UserPreferencesViewModel.Factory)
+
     val userPreferencesUiState by userPreferencesViewModel.uiState.collectAsStateWithLifecycle(
         initialValue = UserPreferences()
     )
-    val myAppViewModel = viewModel<MyAppViewModel>(factory = MyAppViewModel.Factory)
-    NavHost(
-        navController = navController,
-        startDestination = authRoute
-    ) {
-        composable(itemsRoute) {
-            ItemsScreen(
-                onItemClick = { itemId ->
-                    Log.d("MyAppNavHost", "navigate to item $itemId")
-                    navController.navigate("$itemsRoute/$itemId")
-                },
-                onAddItem = {
-                    Log.d("MyAppNavHost", "navigate to new item")
-                    navController.navigate("$itemsRoute-new")
-                },
-                onLogout = {
-                    Log.d("MyAppNavHost", "logout")
-                    myAppViewModel.logout()
-                    Api.tokenInterceptor.token = null
-                    navController.navigate(authRoute) {
-                        popUpTo(0)
-                    }
-                })
-        }
-        composable(
-            route = "$itemsRoute/{id}",
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        )
-        {
-            ItemScreen(
-                itemId = it.arguments?.getString("id"),
-                onClose = { onCloseItem() }
-            )
-        }
-        composable(route = "$itemsRoute-new")
-        {
-            ItemAddScreen(
-                itemId = null,
-                onClose = { onCloseItem() }
-            )
-        }
-        composable(route = authRoute)
-        {
-            LoginScreen(
-                onClose = {
-                    Log.d("MyAppNavHost", "navigate to list")
-                    navController.navigate(itemsRoute)
-                }
-            )
-        }
-    }
+
     LaunchedEffect(userPreferencesUiState.token) {
         if (userPreferencesUiState.token.isNotEmpty()) {
-            Log.d("MyAppNavHost", "Lauched effect navigate to items")
+            Log.d("MyAppNavHost", "Token found -> Navigate to Items")
             Api.tokenInterceptor.token = userPreferencesUiState.token
             myAppViewModel.setToken(userPreferencesUiState.token)
             navController.navigate(itemsRoute) {
                 popUpTo(0)
+            }
+        } else {
+
+            Log.d("MyAppNavHost", "Token empty -> Navigate to Auth")
+            Api.tokenInterceptor.token = null
+
+            if (navController.currentDestination?.route != authRoute) {
+                navController.navigate(authRoute) {
+                    popUpTo(0)
+                }
+            }
+        }
+    }
+
+    SharedTransitionLayout {
+        NavHost(
+            navController = navController,
+            startDestination = authRoute
+        ) {
+            composable(itemsRoute) {
+                ItemsScreen(
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                    onItemClick = { itemId ->
+                        Log.d("MyAppNavHost", "navigate to item $itemId")
+                        navController.navigate("$itemsRoute/$itemId")
+                    },
+                    onAddItem = {
+                        Log.d("MyAppNavHost", "navigate to new item")
+                        navController.navigate("$itemsRoute-new")
+                    },
+                    onLogout = {
+                        Log.d("MyAppNavHost", "logout clicked")
+                        myAppViewModel.logout()
+
+                    })
+            }
+            composable(
+                route = "$itemsRoute/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) { backStackEntry ->
+                ItemScreen(
+                    itemId = backStackEntry.arguments?.getString("id"),
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                    onClose = { onCloseItem() }
+                )
+            }
+            composable(route = "$itemsRoute-new")
+            {
+                ItemAddScreen(
+                    itemId = null,
+                    onClose = { onCloseItem() }
+                )
+            }
+            composable(route = authRoute)
+            {
+                LoginScreen(
+                    onClose = {
+                        Log.d("MyAppNavHost", "navigate to list")
+                        navController.navigate(itemsRoute)
+                    }
+                )
             }
         }
     }

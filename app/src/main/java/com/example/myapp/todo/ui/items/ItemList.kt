@@ -35,19 +35,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import java.util.Base64
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 typealias OnItemFn = (id: String?) -> Unit
-
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ItemList(itemList: List<Item>, onItemClick: OnItemFn, modifier: Modifier) {
+fun ItemList(itemList: List<Item>, onItemClick: OnItemFn, modifier: Modifier,listState: LazyListState = rememberLazyListState(),sharedTransitionScope: SharedTransitionScope,
+             animatedVisibilityScope: AnimatedVisibilityScope) {
     Log.d("ItemList", "recompose")
     LazyColumn(
+        state=listState,
         modifier = modifier
             .fillMaxSize()
             .padding(12.dp)
     ) {
         items(itemList) { item ->
-            ItemDetail(item, onItemClick)
+            ItemDetail(item, onItemClick,sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope)
         }
     }
 }
@@ -58,8 +66,9 @@ fun toBitmap(url64:String):Bitmap {
     val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     return bmp.copy(Bitmap.Config.ARGB_8888, true)
 }
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ItemDetail(item: Item, onItemClick: OnItemFn) {
+fun ItemDetail(item: Item, onItemClick: OnItemFn,sharedTransitionScope: SharedTransitionScope, animatedVisibilityScope: AnimatedVisibilityScope) {
     Log.d("ItemDetail", "recompose id = ${item._id}, cod: ${item.cod}")
     Row(
         modifier = Modifier
@@ -101,15 +110,21 @@ fun ItemDetail(item: Item, onItemClick: OnItemFn) {
                 item.imageUrl
             }
 
-            AsyncImage(
-                model = imageModel,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = imageModel,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "image-${item._id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        ),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
     }
 }

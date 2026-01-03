@@ -1,6 +1,10 @@
 package com.example.myapp.todo.ui.item
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,9 +35,35 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapp.R
 import com.example.myapp.core.Result
 import com.example.myapp.todo.ImagePicker
-@OptIn(ExperimentalMaterial3Api::class)
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.myapp.todo.ImagePicker
+import java.util.Base64
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+@OptIn(ExperimentalMaterial3Api::class,ExperimentalSharedTransitionApi::class)
 @Composable
-fun ItemScreen(itemId: String?, onClose: () -> Unit) {
+fun ItemScreen(itemId: String?, sharedTransitionScope: SharedTransitionScope,
+               animatedVisibilityScope: AnimatedVisibilityScope,onClose: () -> Unit) {
     val itemViewModel = viewModel<ItemViewModel>(factory = ItemViewModel.Factory(itemId))
     val itemUiState = itemViewModel.uiState
 
@@ -43,6 +73,14 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     var data by rememberSaveable { mutableStateOf(convertStringToDate(itemUiState.item.data)) }
     var pietre by rememberSaveable { mutableStateOf(itemUiState.item.pietre) }
     var imageUrl by rememberSaveable { mutableStateOf(itemUiState.item.imageUrl) }
+
+    val rotation = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        rotation.animateTo(
+            targetValue = 360f,
+            animationSpec = tween(durationMillis = 1000)
+        )
+    }
 
     Log.d("ItemScreen", "recompose, text = $cod")
 
@@ -94,6 +132,7 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
             modifier = Modifier
                 .padding(it)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
             if (itemUiState.loadResult is Result.Loading) {
                 CircularProgressIndicator()
@@ -107,6 +146,32 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
             }
             if (itemUiState.loadResult is Result.Error) {
                 Text(text = "Failed to load item - ${(itemUiState.loadResult as Result.Error).exception?.message}")
+            }
+            if (imageUrl.isNotEmpty()) {
+                val imageModel = if (imageUrl.startsWith("data:") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    toBitmap(imageUrl)
+                } else {
+                    imageUrl
+                }
+
+                with(sharedTransitionScope) {
+                    AsyncImage(
+                        model = imageModel,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.3f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .sharedElement(
+                                sharedContentState = rememberSharedContentState(key = "image-$itemId"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                            .graphicsLayer {
+                                rotationZ = rotation.value
+                            }
+                    )
+                }
             }
             Column {
                 TextField(
@@ -153,9 +218,27 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun toBitmap(url64:String):Bitmap {
+    val data64 = url64.substring("data:image/jpg;base64,".length)
+    val bytes = Base64.getDecoder().decode(data64)
+    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    return bmp.copy(Bitmap.Config.ARGB_8888, true)
+}
 
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview
 @Composable
 fun PreviewItemScreen() {
-    ItemScreen(itemId = "0", onClose = {})
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            ItemScreen(
+                itemId = "0",
+                onClose = {},
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this
+            )
+        }
+    }
 }
