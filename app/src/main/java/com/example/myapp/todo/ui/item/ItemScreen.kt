@@ -54,7 +54,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.myapp.todo.ImagePicker
-import java.util.Base64
+import android.util.Base64
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -218,12 +218,21 @@ fun ItemScreen(itemId: String?, sharedTransitionScope: SharedTransitionScope,
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun toBitmap(url64:String):Bitmap {
-    val data64 = url64.substring("data:image/jpg;base64,".length)
-    val bytes = Base64.getDecoder().decode(data64)
-    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    return bmp.copy(Bitmap.Config.ARGB_8888, true)
+fun toBitmap(url64: String): Bitmap? {
+    try {
+
+        val commaIndex = url64.indexOf(',')
+        val base64String = if (commaIndex != -1) {
+            url64.substring(commaIndex + 1)
+        } else {
+            url64
+        }
+        val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
+        return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
 }
 
 

@@ -34,7 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import java.util.Base64
+import android.util.Base64
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -59,12 +59,21 @@ fun ItemList(itemList: List<Item>, onItemClick: OnItemFn, modifier: Modifier,lis
         }
     }
 }
-@RequiresApi(Build.VERSION_CODES.O)
-fun toBitmap(url64:String):Bitmap {
-    val data64 = url64.substring("data:image/jpg;base64,".length)
-    val bytes = Base64.getDecoder().decode(data64)
-    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    return bmp.copy(Bitmap.Config.ARGB_8888, true)
+fun toBitmap(url64: String): Bitmap? {
+    try {
+        val commaIndex = url64.indexOf(',')
+        val base64String = if (commaIndex != -1) {
+            url64.substring(commaIndex + 1)
+        } else {
+            url64
+        }
+
+        val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
+        return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+    } catch (e: Exception) {
+        Log.e("ItemList", "Eroare la decodare Base64 pentru imagine", e)
+        return null
+    }
 }
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
